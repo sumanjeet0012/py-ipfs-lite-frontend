@@ -1,4 +1,4 @@
-import { cn } from "@/lib/cn";
+import { cn } from "@/lib/utils";
 import { Card, CardTitle, CardContent } from "@/components/ui/card";
 import { CheckCircle, XCircle } from "lucide-react";
 

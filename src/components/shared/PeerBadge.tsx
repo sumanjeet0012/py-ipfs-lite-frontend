@@ -19,18 +19,33 @@ export function PeerBadge({ peerId, showFull = false }: PeerBadgeProps) {
   const displayId = showFull ? peerId : truncatePeerId(peerId);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(peerId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(peerId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleCopy();
+    }
   };
 
   return (
     <Badge
       variant="secondary"
       className="group/peer cursor-pointer gap-1.5 font-mono"
+      role="button"
+      tabIndex={0}
+      aria-label={`Copy peer ID ${displayId}`}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
       onClick={handleCopy}
+      onKeyDown={handleKeyDown}
     >
       <span>{displayId}</span>
       {(hovering || copied) && (

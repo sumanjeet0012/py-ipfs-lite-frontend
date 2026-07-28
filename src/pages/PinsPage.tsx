@@ -38,13 +38,16 @@ export default function PinsPage() {
   // List
   const [pins, setPins] = useState<Record<string, { Type: string }>>({});
   const [pinsLoading, setPinsLoading] = useState(false);
+  const [pinsError, setPinsError] = useState<string | null>(null);
 
   const fetchPins = async () => {
     setPinsLoading(true);
+    setPinsError(null);
     try {
       const res = await api.pinLs();
       setPins(res.Keys || {});
-    } catch {
+    } catch (e: any) {
+      setPinsError(e.message || "Failed to load pins");
     } finally {
       setPinsLoading(false);
     }
@@ -183,6 +186,7 @@ export default function PinsPage() {
                 size="sm"
                 onClick={fetchPins}
                 disabled={pinsLoading}
+                aria-label="Refresh pins"
               >
                 <RefreshCw
                   className={`h-4 w-4 ${pinsLoading ? "animate-spin" : ""}`}
@@ -191,7 +195,12 @@ export default function PinsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {pinEntries.length === 0 ? (
+            {pinsError && (
+              <ResultCard success={false} title="Error">
+                {pinsError}
+              </ResultCard>
+            )}
+            {pinEntries.length === 0 && !pinsError ? (
               <p className="py-8 text-center text-muted-foreground">
                 No pinned content
               </p>

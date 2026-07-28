@@ -1,7 +1,8 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { cn } from "@/lib/cn";
-import { Upload, FileIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { formatBytes } from "@/lib/format";
+import { Upload, FileIcon, X } from "lucide-react";
 
 interface FileDropzoneProps {
   onFile: (file: File) => void;
@@ -19,6 +20,14 @@ export function FileDropzone({ onFile, accept }: FileDropzoneProps) {
       }
     },
     [onFile]
+  );
+
+  const handleClear = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setSelectedFile(null);
+    },
+    []
   );
 
   const acceptMap = accept
@@ -47,8 +56,16 @@ export function FileDropzone({ onFile, accept }: FileDropzoneProps) {
           <FileIcon className="size-8 text-primary" />
           <p className="text-sm text-foreground">{selectedFile.name}</p>
           <p className="text-xs text-muted-foreground">
-            {(selectedFile.size / 1024).toFixed(1)} KB
+            {formatBytes(selectedFile.size)}
           </p>
+          <button
+            type="button"
+            onClick={handleClear}
+            className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3" />
+            Clear
+          </button>
         </>
       ) : (
         <>

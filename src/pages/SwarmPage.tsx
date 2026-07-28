@@ -32,6 +32,7 @@ export default function SwarmPage() {
   const [connectResult, setConnectResult] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [disconnectLoading, setDisconnectLoading] = useState<string | null>(null);
+  const [disconnectError, setDisconnectError] = useState<string | null>(null);
 
   const fetchPeers = async () => {
     setPeersLoading(true);
@@ -68,11 +69,12 @@ export default function SwarmPage() {
 
   const handleDisconnect = async (peerId: string) => {
     setDisconnectLoading(peerId);
+    setDisconnectError(null);
     try {
       await api.swarmDisconnect(peerId);
       fetchPeers();
     } catch (e: any) {
-      console.error("Disconnect failed:", e);
+      setDisconnectError(e.message || "Disconnect failed");
     } finally {
       setDisconnectLoading(null);
     }
@@ -122,6 +124,11 @@ export default function SwarmPage() {
                 {connectResult}
               </ResultCard>
             )}
+            {disconnectError && (
+              <ResultCard success={false} title="Disconnect Failed">
+                {disconnectError}
+              </ResultCard>
+            )}
           </CardContent>
         </Card>
 
@@ -143,6 +150,7 @@ export default function SwarmPage() {
                   size="sm"
                   onClick={fetchPeers}
                   disabled={peersLoading}
+                  aria-label="Refresh peers"
                 >
                   <RefreshCw
                     className={`h-4 w-4 ${peersLoading ? "animate-spin" : ""}`}
@@ -199,7 +207,7 @@ export default function SwarmPage() {
                               size="sm"
                               onClick={() => handleDisconnect(peerId)}
                               disabled={disconnectLoading === peerId}
-                              title="Disconnect"
+                              aria-label={`Disconnect from ${peerId.slice(0, 12)}`}
                             >
                               {disconnectLoading === peerId ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />

@@ -21,14 +21,18 @@ export default function DebugPage() {
   const [loadingPeerstore, setLoadingPeerstore] = useState(false);
   const [loadingRouting, setLoadingRouting] = useState(false);
   const [loadingConnections, setLoadingConnections] = useState(false);
+  const [peerstoreError, setPeerstoreError] = useState<string | null>(null);
+  const [routingError, setRoutingError] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const fetchPeerstore = async () => {
     setLoadingPeerstore(true);
+    setPeerstoreError(null);
     try {
       const data = await api.debugPeerstore();
       setPeerstore(data);
-    } catch (e) {
-      console.error("Failed to fetch peerstore", e);
+    } catch (e: any) {
+      setPeerstoreError(e.message || "Failed to fetch peerstore");
     } finally {
       setLoadingPeerstore(false);
     }
@@ -36,11 +40,12 @@ export default function DebugPage() {
 
   const fetchRoutingTable = async () => {
     setLoadingRouting(true);
+    setRoutingError(null);
     try {
       const data = await api.debugRoutingTable();
       setRoutingTable(data);
-    } catch (e) {
-      console.error("Failed to fetch routing table", e);
+    } catch (e: any) {
+      setRoutingError(e.message || "Failed to fetch routing table");
     } finally {
       setLoadingRouting(false);
     }
@@ -48,11 +53,12 @@ export default function DebugPage() {
 
   const fetchConnectionStats = async () => {
     setLoadingConnections(true);
+    setConnectionError(null);
     try {
       const data = await api.connectionStats();
       setConnectionStats(data);
-    } catch (e) {
-      console.error("Failed to fetch connection stats", e);
+    } catch (e: any) {
+      setConnectionError(e.message || "Failed to fetch connection stats");
     } finally {
       setLoadingConnections(false);
     }
@@ -64,7 +70,17 @@ export default function DebugPage() {
     fetchConnectionStats();
   }, []);
 
-  const renderPeerTable = (peers: string[]) => {
+  const renderPeerTable = (peers: string[], loading: boolean, error: string | null) => {
+    if (loading) {
+      return (
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      );
+    }
+    if (error) {
+      return (
+        <p className="text-sm text-destructive">{error}</p>
+      );
+    }
     if (!peers || peers.length === 0) {
       return (
         <p className="text-sm text-muted-foreground">No peers found.</p>
@@ -112,6 +128,7 @@ export default function DebugPage() {
                 size="sm"
                 onClick={fetchPeerstore}
                 disabled={loadingPeerstore}
+                aria-label="Refresh peerstore"
               >
                 <RefreshCw
                   className={`size-4 ${loadingPeerstore ? "animate-spin" : ""}`}
@@ -120,7 +137,7 @@ export default function DebugPage() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>{renderPeerTable(peers)}</CardContent>
+          <CardContent>{renderPeerTable(peers, loadingPeerstore, peerstoreError)}</CardContent>
         </Card>
 
         <Card>
@@ -132,6 +149,7 @@ export default function DebugPage() {
                 size="sm"
                 onClick={fetchRoutingTable}
                 disabled={loadingRouting}
+                aria-label="Refresh routing table"
               >
                 <RefreshCw
                   className={`size-4 ${loadingRouting ? "animate-spin" : ""}`}
@@ -140,7 +158,7 @@ export default function DebugPage() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>{renderPeerTable(routes)}</CardContent>
+          <CardContent>{renderPeerTable(routes, loadingRouting, routingError)}</CardContent>
         </Card>
 
         <Card>
@@ -152,6 +170,7 @@ export default function DebugPage() {
                 size="sm"
                 onClick={fetchConnectionStats}
                 disabled={loadingConnections}
+                aria-label="Refresh connection stats"
               >
                 <RefreshCw
                   className={`size-4 ${loadingConnections ? "animate-spin" : ""}`}
@@ -161,7 +180,11 @@ export default function DebugPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {connectionStats ? (
+            {loadingConnections ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : connectionError ? (
+              <p className="text-sm text-destructive">{connectionError}</p>
+            ) : connectionStats ? (
               <JsonViewer data={connectionStats} />
             ) : (
               <p className="text-sm text-muted-foreground">

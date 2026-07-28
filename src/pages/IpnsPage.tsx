@@ -20,10 +20,12 @@ export default function IpnsPage() {
 
   const handlePublish = async () => {
     if (!publishPath.trim()) return;
+    const lifetimeNum = parseInt(lifetime, 10);
+    if (!lifetimeNum || lifetimeNum < 1) return;
     setPublishing(true);
     setPublishResult(null);
     try {
-      const data = await api.namePublish(publishPath, `${lifetime}h`);
+      const data = await api.namePublish(publishPath, `${lifetimeNum}h`);
       setPublishResult({ success: true, data });
     } catch (e: any) {
       setPublishResult({ success: false, message: e.message });
@@ -77,9 +79,10 @@ export default function IpnsPage() {
                 value={lifetime}
                 onChange={(e) => setLifetime(e.target.value)}
                 placeholder="24"
+                min="1"
               />
             </div>
-            <Button onClick={handlePublish} disabled={publishing || !publishPath.trim()}>
+            <Button onClick={handlePublish} disabled={publishing || !publishPath.trim() || !lifetime || parseInt(lifetime, 10) < 1}>
               <Send className="size-4" />
               {publishing ? "Publishing..." : "Publish"}
             </Button>

@@ -88,6 +88,7 @@ export default function RepoPage() {
                 size="sm"
                 onClick={fetchRefs}
                 disabled={loadingRefs}
+                aria-label="Refresh refs"
               >
                 <RefreshCw
                   className={`size-4 ${loadingRefs ? "animate-spin" : ""}`}

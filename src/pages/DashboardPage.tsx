@@ -44,11 +44,15 @@ export default function DashboardPage() {
     load();
   }, []);
 
-  const copyId = () => {
+  const copyId = async () => {
     if (identity?.ID) {
-      navigator.clipboard.writeText(identity.ID);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      try {
+        await navigator.clipboard.writeText(identity.ID);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        setCopied(false);
+      }
     }
   };
 
@@ -90,7 +94,7 @@ export default function DashboardPage() {
                 <code className="flex-1 truncate rounded bg-secondary px-2 py-1 text-sm">
                   {identity?.ID ?? "N/A"}
                 </code>
-                <Button variant="ghost" size="sm" onClick={copyId}>
+                <Button variant="ghost" size="sm" onClick={copyId} aria-label="Copy peer ID to clipboard">
                   <Copy className="h-4 w-4" />
                   {copied ? "Copied!" : ""}
                 </Button>
