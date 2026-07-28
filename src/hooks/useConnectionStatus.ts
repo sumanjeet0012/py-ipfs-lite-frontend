@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { api } from "@/lib/api";
 
 const POLL_MS = 10_000;
 
@@ -9,8 +10,8 @@ export function useConnectionStatus(): boolean {
   useEffect(() => {
     async function check() {
       try {
-        const res = await fetch("/api/v0/version");
-        setConnected(res.ok);
+        await api.version();
+        setConnected(true);
       } catch {
         setConnected(false);
       }

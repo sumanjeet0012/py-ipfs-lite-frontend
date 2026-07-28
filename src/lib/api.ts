@@ -87,7 +87,7 @@ export const api = {
 
   blockRm: (cid: string) => post(`/api/v0/block/rm?arg=${encodeURIComponent(cid)}`),
 
-  dagPut: (data: object, codec = "dag-cbor") =>
+  dagPut: (data: object, codec = "dag-json") =>
     jsonPost(`/api/v0/dag/put?store-codec=${encodeURIComponent(codec)}`, data),
 
   dagGet: (cid: string) =>

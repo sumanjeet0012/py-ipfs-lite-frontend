@@ -3,6 +3,7 @@ import { api } from "@/lib/api";
 import { PageShell } from "@/components/layout/PageShell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -27,7 +28,8 @@ export default function DagPage() {
   // Get
   const [getCid, setGetCid] = useState("");
   const [getResult, setGetResult] = useState<any>(null);
-  const [getRawData, setGetRawData] = useState<string | null>(null);
+  const [getRawHex, setGetRawHex] = useState<string | null>(null);
+  const [getContentType, setGetContentType] = useState<string>("");
   const [getLoading, setGetLoading] = useState(false);
   const [getError, setGetError] = useState<string | null>(null);
 
@@ -50,15 +52,19 @@ export default function DagPage() {
     setGetLoading(true);
     setGetError(null);
     setGetResult(null);
-    setGetRawData(null);
+    setGetRawHex(null);
+    setGetContentType("");
     try {
       const { buf, contentType } = await api.dagGet(getCid);
+      setGetContentType(contentType);
       if (contentType.includes("application/json")) {
         const text = new TextDecoder().decode(buf);
         setGetResult(JSON.parse(text));
       } else {
-        const text = new TextDecoder().decode(buf);
-        setGetRawData(text);
+        const hex = Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join(" ");
+        setGetRawHex(hex);
       }
     } catch (e: any) {
       setGetError(e.message);
@@ -153,25 +159,22 @@ export default function DagPage() {
             )}
             {getResult && (
               <div className="space-y-2">
-                {getResult.Cid && (
-                  <p className="text-sm text-muted-foreground">
-                    CID: <code className="text-accent">{getResult.Cid["/"]}</code>
-                  </p>
-                )}
-                {getResult.node_data ? (
-                  <JsonViewer data={getResult.node_data} />
-                ) : (
-                  <JsonViewer data={getResult} />
-                )}
+                <JsonViewer data={getResult} />
               </div>
             )}
-            {getRawData && (
+            {getRawHex && (
               <div className="space-y-2">
-                <Textarea
-                  readOnly
-                  value={getRawData}
-                  className="min-h-[200px] font-mono text-sm"
-                />
+                <Badge variant="secondary">
+                  {getContentType || "binary"} — {getRawHex.split(" ").length} bytes
+                </Badge>
+                <div>
+                  <p className="mb-1 text-xs text-muted-foreground">
+                    Raw hex:
+                  </p>
+                  <code className="block rounded bg-secondary p-2 text-xs break-all">
+                    {getRawHex}
+                  </code>
+                </div>
               </div>
             )}
           </CardContent>

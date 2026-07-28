@@ -55,12 +55,24 @@ export default function FilesPage() {
     try {
       const buf = await api.cat(cid);
       setCatBuf(buf);
-      const text = new TextDecoder().decode(buf);
-      setCatResult(text);
-      const hex = Array.from(new Uint8Array(buf).slice(0, 100))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join(" ");
-      setCatHex(hex + (buf.byteLength > 100 ? " ..." : ""));
+      const bytes = new Uint8Array(buf);
+      const isBinary =
+        buf.byteLength > 0 &&
+        (bytes.includes(0) || new TextDecoder().decode(buf).includes("\uFFFD"));
+      if (isBinary) {
+        const hex = Array.from(bytes.slice(0, 100))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join(" ");
+        setCatHex(hex + (buf.byteLength > 100 ? " ..." : ""));
+        setCatResult(`[Binary data — ${buf.byteLength} bytes]`);
+      } else {
+        const text = new TextDecoder().decode(buf);
+        setCatResult(text);
+        const hex = Array.from(bytes.slice(0, 100))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join(" ");
+        setCatHex(hex + (buf.byteLength > 100 ? " ..." : ""));
+      }
     } catch (e: any) {
       setCatError(e.message || "Failed to fetch");
     } finally {
