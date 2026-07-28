@@ -11,6 +11,18 @@ import { FileDropzone } from "@/components/shared/FileDropzone";
 import { ResultCard } from "@/components/shared/ResultCard";
 import { Upload, Download, Loader2 } from "lucide-react";
 
+function downloadBlob(buf: ArrayBuffer, filename: string) {
+  const blob = new Blob([buf]);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function FilesPage() {
   const [searchParams] = useSearchParams();
   const [catCid, setCatCid] = useState(searchParams.get("cid") || "");
@@ -19,9 +31,12 @@ export default function FilesPage() {
   const [catLoading, setCatLoading] = useState(false);
   const [catError, setCatError] = useState<string | null>(null);
 
+  const [catBuf, setCatBuf] = useState<ArrayBuffer | null>(null);
+
   const [addResult, setAddResult] = useState<any>(null);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [addDownloading, setAddDownloading] = useState(false);
 
   useEffect(() => {
     const cid = searchParams.get("cid");
@@ -36,8 +51,10 @@ export default function FilesPage() {
     setCatError(null);
     setCatResult("");
     setCatHex("");
+    setCatBuf(null);
     try {
       const buf = await api.cat(cid);
+      setCatBuf(buf);
       const text = new TextDecoder().decode(buf);
       setCatResult(text);
       const hex = Array.from(new Uint8Array(buf).slice(0, 100))
@@ -51,6 +68,11 @@ export default function FilesPage() {
     }
   };
 
+  const handleDownloadCat = async () => {
+    if (!catBuf || !catCid) return;
+    downloadBlob(catBuf, catCid);
+  };
+
   const handleAdd = async (file: File) => {
     setAddLoading(true);
     setAddError(null);
@@ -62,6 +84,19 @@ export default function FilesPage() {
       setAddError(e.message || "Failed to add file");
     } finally {
       setAddLoading(false);
+    }
+  };
+
+  const handleDownloadAdded = async () => {
+    if (!addResult?.Hash) return;
+    setAddDownloading(true);
+    try {
+      const buf = await api.cat(addResult.Hash);
+      downloadBlob(buf, addResult.Name || addResult.Hash);
+    } catch (e: any) {
+      setAddError(e.message || "Failed to download");
+    } finally {
+      setAddDownloading(false);
     }
   };
 
@@ -92,7 +127,7 @@ export default function FilesPage() {
             )}
             {addResult && (
               <ResultCard success={true} title="File Added">
-                <div className="space-y-1 text-sm">
+                <div className="space-y-2 text-sm">
                   <p>
                     <span className="text-muted-foreground">Name:</span>{" "}
                     {addResult.Name}
@@ -105,6 +140,19 @@ export default function FilesPage() {
                     <span className="text-muted-foreground">Size:</span>{" "}
                     {addResult.Size} bytes
                   </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDownloadAdded}
+                    disabled={addDownloading}
+                  >
+                    {addDownloading ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Download className="mr-1 h-3 w-3" />
+                    )}
+                    Download
+                  </Button>
                 </div>
               </ResultCard>
             )}
@@ -144,6 +192,14 @@ export default function FilesPage() {
                   <Badge variant="secondary">
                     {catResult.length} chars
                   </Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleDownloadCat}
+                  >
+                    <Download className="mr-1 h-3 w-3" />
+                    Download
+                  </Button>
                 </div>
                 <Textarea
                   readOnly

@@ -143,13 +143,15 @@ export default function DagPage() {
             )}
             {getResult && (
               <div className="space-y-2">
-                {getResult.cid && (
+                {getResult.Cid && (
                   <p className="text-sm text-muted-foreground">
-                    CID: <code className="text-accent">{getResult.cid}</code>
+                    CID: <code className="text-accent">{getResult.Cid["/"]}</code>
                   </p>
                 )}
-                {getResult.node_data && (
+                {getResult.node_data ? (
                   <JsonViewer data={getResult.node_data} />
+                ) : (
+                  <JsonViewer data={getResult} />
                 )}
               </div>
             )}

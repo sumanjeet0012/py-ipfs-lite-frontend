@@ -26,7 +26,7 @@ const navItems = [
 
 export function Sidebar() {
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card">
+    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-border bg-card">
       <div className="flex h-14 items-center gap-2 border-b border-border px-4">
         <Database className="h-5 w-5 text-primary" />
         <span className="text-lg font-semibold">py-ipfs-lite</span>

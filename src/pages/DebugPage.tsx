@@ -64,38 +64,38 @@ export default function DebugPage() {
     fetchConnectionStats();
   }, []);
 
-  const renderPeerTable = (peers: any[] | undefined) => {
+  const renderPeerTable = (peers: string[]) => {
     if (!peers || peers.length === 0) {
       return (
         <p className="text-sm text-muted-foreground">No peers found.</p>
       );
     }
     return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Peer ID</TableHead>
-            <TableHead>Addresses</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {peers.map((peer: any, i: number) => (
-            <TableRow key={i}>
-              <TableCell className="font-mono text-xs">
-                {peer.ID}
-              </TableCell>
-              <TableCell className="font-mono text-xs">
-                {peer.Addrs?.join(", ") ?? "-"}
-              </TableCell>
+      <div className="max-h-[400px] overflow-y-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>#</TableHead>
+              <TableHead>Peer ID</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {peers.map((peerId: string, i: number) => (
+              <TableRow key={i}>
+                <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                <TableCell className="font-mono text-xs">
+                  {peerId}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     );
   };
 
-  const peers = peerstore?.Peers ?? [];
-  const routes = routingTable?.Peers ?? [];
+  const peers = peerstore?.peers ?? [];
+  const routes = routingTable?.peers ?? [];
 
   return (
     <PageShell
