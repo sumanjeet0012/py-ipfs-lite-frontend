@@ -1,18 +1,15 @@
 import { Header } from "./Header";
+import { useConnectionStatus } from "@/hooks/useConnectionStatus";
 
 interface PageShellProps {
   title: string;
   description?: string;
-  connected?: boolean;
   children: React.ReactNode;
 }
 
-export function PageShell({
-  title,
-  description,
-  connected,
-  children,
-}: PageShellProps) {
+export function PageShell({ title, description, children }: PageShellProps) {
+  const connected = useConnectionStatus();
+
   return (
     <div className="flex h-full flex-col">
       <Header title={title} connected={connected} />

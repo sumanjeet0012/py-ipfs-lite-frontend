@@ -26,6 +26,7 @@ export default function App() {
             <Route path="/repo" element={<RepoPage />} />
             <Route path="/ipns" element={<IpnsPage />} />
             <Route path="/debug" element={<DebugPage />} />
+            <Route path="*" element={<DashboardPage />} />
           </Routes>
         </main>
       </div>

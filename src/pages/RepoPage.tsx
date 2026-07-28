@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { formatBytes } from "@/lib/format";
 import { PageShell } from "@/components/layout/PageShell";
 import { StatGrid } from "@/components/shared/StatGrid";
 import { ResultCard } from "@/components/shared/ResultCard";
@@ -14,14 +15,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RefreshCw, Trash2 } from "lucide-react";
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-}
 
 export default function RepoPage() {
   const [stats, setStats] = useState<any>(null);

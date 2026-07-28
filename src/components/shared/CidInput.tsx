@@ -21,7 +21,7 @@ export function CidInput({
   const isInvalid = value.length > 0 && value.length < 10;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && onSubmit) {
+    if (e.key === "Enter" && onSubmit && value.trim()) {
       onSubmit();
     }
   };
@@ -43,7 +43,7 @@ export function CidInput({
           )}
         />
         {onSubmit && (
-          <Button variant="default" onClick={onSubmit}>
+          <Button variant="default" onClick={onSubmit} disabled={!value.trim()}>
             <Search className="size-4" />
           </Button>
         )}

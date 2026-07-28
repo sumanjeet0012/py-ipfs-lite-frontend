@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Send, Search } from "lucide-react";
 
 export default function IpnsPage() {
-  const [publishPath, setPublishPath] = useState("/ipfs/QmHash...");
+  const [publishPath, setPublishPath] = useState("");
   const [lifetime, setLifetime] = useState("24");
   const [publishResult, setPublishResult] = useState<any>(null);
   const [publishing, setPublishing] = useState(false);
@@ -19,6 +19,7 @@ export default function IpnsPage() {
   const [resolving, setResolving] = useState(false);
 
   const handlePublish = async () => {
+    if (!publishPath.trim()) return;
     setPublishing(true);
     setPublishResult(null);
     try {
@@ -32,7 +33,7 @@ export default function IpnsPage() {
   };
 
   const handleResolve = async () => {
-    if (!resolveName) return;
+    if (!resolveName.trim()) return;
     setResolving(true);
     setResolveResult(null);
     try {
@@ -63,7 +64,8 @@ export default function IpnsPage() {
               <Input
                 value={publishPath}
                 onChange={(e) => setPublishPath(e.target.value)}
-                placeholder="/ipfs/QmHash..."
+                placeholder="/ipfs/Qm..."
+                onKeyDown={(e) => e.key === "Enter" && publishPath.trim() && handlePublish()}
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -77,7 +79,7 @@ export default function IpnsPage() {
                 placeholder="24"
               />
             </div>
-            <Button onClick={handlePublish} disabled={publishing}>
+            <Button onClick={handlePublish} disabled={publishing || !publishPath.trim()}>
               <Send className="size-4" />
               {publishing ? "Publishing..." : "Publish"}
             </Button>
@@ -112,7 +114,7 @@ export default function IpnsPage() {
               placeholder="Enter IPNS name..."
               label="IPNS Name"
             />
-            <Button onClick={handleResolve} disabled={resolving}>
+            <Button onClick={handleResolve} disabled={resolving || !resolveName.trim()}>
               <Search className="size-4" />
               {resolving ? "Resolving..." : "Resolve"}
             </Button>

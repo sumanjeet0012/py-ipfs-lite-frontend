@@ -18,6 +18,7 @@ import { PeerBadge } from "@/components/shared/PeerBadge";
 import {
   Users,
   Plug,
+  Unplug,
   RefreshCw,
   Loader2,
 } from "lucide-react";
@@ -30,6 +31,7 @@ export default function SwarmPage() {
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectResult, setConnectResult] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [disconnectLoading, setDisconnectLoading] = useState<string | null>(null);
 
   const fetchPeers = async () => {
     setPeersLoading(true);
@@ -48,6 +50,7 @@ export default function SwarmPage() {
   }, []);
 
   const handleConnect = async () => {
+    if (!connectAddr.trim()) return;
     setConnectLoading(true);
     setConnectError(null);
     setConnectResult(null);
@@ -60,6 +63,18 @@ export default function SwarmPage() {
       setConnectError(e.message);
     } finally {
       setConnectLoading(false);
+    }
+  };
+
+  const handleDisconnect = async (peerId: string) => {
+    setDisconnectLoading(peerId);
+    try {
+      await api.swarmDisconnect(peerId);
+      fetchPeers();
+    } catch (e: any) {
+      console.error("Disconnect failed:", e);
+    } finally {
+      setDisconnectLoading(null);
     }
   };
 
@@ -82,12 +97,12 @@ export default function SwarmPage() {
                 value={connectAddr}
                 onChange={(e) => setConnectAddr(e.target.value)}
                 onKeyDown={(e) =>
-                  e.key === "Enter" && connectAddr && handleConnect()
+                  e.key === "Enter" && connectAddr.trim() && handleConnect()
                 }
               />
               <Button
                 onClick={handleConnect}
-                disabled={!connectAddr || connectLoading}
+                disabled={!connectAddr.trim() || connectLoading}
               >
                 {connectLoading ? (
                   <Loader2 className="mr-1 h-4 w-4 animate-spin" />
@@ -148,35 +163,54 @@ export default function SwarmPage() {
                     <TableRow>
                       <TableHead>Peer ID</TableHead>
                       <TableHead>Addresses</TableHead>
+                      <TableHead className="w-[80px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {peers.map((p: any, i: number) => (
-                      <TableRow key={i}>
-                        <TableCell>
-                          <PeerBadge peerId={p.peer || p.Peer || ""} />
-                        </TableCell>
-                        <TableCell>
-                          <div className="max-w-md space-y-0.5">
-                            {(p.addrs || p.Addrs || [])
-                              .slice(0, 2)
-                              .map((addr: string, j: number) => (
-                                <div
-                                  key={j}
-                                  className="truncate text-xs text-muted-foreground"
-                                >
-                                  {addr}
-                                </div>
-                              ))}
-                            {(p.addrs || p.Addrs || []).length > 2 && (
-                              <span className="text-xs text-muted-foreground">
-                                +{(p.addrs || p.Addrs || []).length - 2} more
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {peers.map((p: any, i: number) => {
+                      const peerId = p.peer || p.Peer || "";
+                      return (
+                        <TableRow key={i}>
+                          <TableCell>
+                            <PeerBadge peerId={peerId} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-md space-y-0.5">
+                              {(p.addrs || p.Addrs || [])
+                                .slice(0, 2)
+                                .map((addr: string, j: number) => (
+                                  <div
+                                    key={j}
+                                    className="truncate text-xs text-muted-foreground"
+                                  >
+                                    {addr}
+                                  </div>
+                                ))}
+                              {(p.addrs || p.Addrs || []).length > 2 && (
+                                <span className="text-xs text-muted-foreground">
+                                  +{(p.addrs || p.Addrs || []).length - 2} more
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDisconnect(peerId)}
+                              disabled={disconnectLoading === peerId}
+                              title="Disconnect"
+                            >
+                              {disconnectLoading === peerId ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Unplug className="h-4 w-4 text-destructive" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

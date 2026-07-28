@@ -27,6 +27,7 @@ export default function DagPage() {
   // Get
   const [getCid, setGetCid] = useState("");
   const [getResult, setGetResult] = useState<any>(null);
+  const [getRawData, setGetRawData] = useState<string | null>(null);
   const [getLoading, setGetLoading] = useState(false);
   const [getError, setGetError] = useState<string | null>(null);
 
@@ -45,11 +46,20 @@ export default function DagPage() {
   };
 
   const handleGet = async () => {
+    if (!getCid.trim()) return;
     setGetLoading(true);
     setGetError(null);
     setGetResult(null);
+    setGetRawData(null);
     try {
-      setGetResult(await api.dagGet(getCid));
+      const { buf, contentType } = await api.dagGet(getCid);
+      if (contentType.includes("application/json")) {
+        const text = new TextDecoder().decode(buf);
+        setGetResult(JSON.parse(text));
+      } else {
+        const text = new TextDecoder().decode(buf);
+        setGetRawData(text);
+      }
     } catch (e: any) {
       setGetError(e.message);
     } finally {
@@ -91,7 +101,7 @@ export default function DagPage() {
               className="min-h-[200px] font-mono text-sm"
               placeholder="Enter JSON data..."
             />
-            <Button onClick={handlePut} disabled={putLoading}>
+            <Button onClick={handlePut} disabled={putLoading || !putJson.trim()}>
               {putLoading ? (
                 <Loader2 className="mr-1 h-4 w-4 animate-spin" />
               ) : (
@@ -153,6 +163,15 @@ export default function DagPage() {
                 ) : (
                   <JsonViewer data={getResult} />
                 )}
+              </div>
+            )}
+            {getRawData && (
+              <div className="space-y-2">
+                <Textarea
+                  readOnly
+                  value={getRawData}
+                  className="min-h-[200px] font-mono text-sm"
+                />
               </div>
             )}
           </CardContent>
