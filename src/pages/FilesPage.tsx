@@ -1,0 +1,170 @@
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { api } from "@/lib/api";
+import { PageShell } from "@/components/layout/PageShell";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { CidInput } from "@/components/shared/CidInput";
+import { FileDropzone } from "@/components/shared/FileDropzone";
+import { ResultCard } from "@/components/shared/ResultCard";
+import { Upload, Download, Loader2 } from "lucide-react";
+
+export default function FilesPage() {
+  const [searchParams] = useSearchParams();
+  const [catCid, setCatCid] = useState(searchParams.get("cid") || "");
+  const [catResult, setCatResult] = useState<string>("");
+  const [catHex, setCatHex] = useState<string>("");
+  const [catLoading, setCatLoading] = useState(false);
+  const [catError, setCatError] = useState<string | null>(null);
+
+  const [addResult, setAddResult] = useState<any>(null);
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const cid = searchParams.get("cid");
+    if (cid) {
+      setCatCid(cid);
+      handleCat(cid);
+    }
+  }, [searchParams]);
+
+  const handleCat = async (cid: string) => {
+    setCatLoading(true);
+    setCatError(null);
+    setCatResult("");
+    setCatHex("");
+    try {
+      const buf = await api.cat(cid);
+      const text = new TextDecoder().decode(buf);
+      setCatResult(text);
+      const hex = Array.from(new Uint8Array(buf).slice(0, 100))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(" ");
+      setCatHex(hex + (buf.byteLength > 100 ? " ..." : ""));
+    } catch (e: any) {
+      setCatError(e.message || "Failed to fetch");
+    } finally {
+      setCatLoading(false);
+    }
+  };
+
+  const handleAdd = async (file: File) => {
+    setAddLoading(true);
+    setAddError(null);
+    setAddResult(null);
+    try {
+      const result = await api.addFile(file);
+      setAddResult(result);
+    } catch (e: any) {
+      setAddError(e.message || "Failed to add file");
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  return (
+    <PageShell title="Files" description="Add and retrieve files">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <Upload className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle>Add File</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FileDropzone onFile={handleAdd} />
+            {addLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading...
+              </div>
+            )}
+            {addError && (
+              <ResultCard success={false} title="Error">
+                {addError}
+              </ResultCard>
+            )}
+            {addResult && (
+              <ResultCard success={true} title="File Added">
+                <div className="space-y-1 text-sm">
+                  <p>
+                    <span className="text-muted-foreground">Name:</span>{" "}
+                    {addResult.Name}
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">CID:</span>{" "}
+                    <code className="text-accent">{addResult.Hash}</code>
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground">Size:</span>{" "}
+                    {addResult.Size} bytes
+                  </p>
+                </div>
+              </ResultCard>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+                <Download className="h-5 w-5 text-accent" />
+              </div>
+              <CardTitle>Fetch File (Cat)</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <CidInput
+              value={catCid}
+              onChange={setCatCid}
+              onSubmit={() => handleCat(catCid)}
+              placeholder="Enter CID to fetch..."
+            />
+            {catLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Fetching from IPFS network...
+              </div>
+            )}
+            {catError && (
+              <ResultCard success={false} title="Error">
+                {catError}
+              </ResultCard>
+            )}
+            {catResult && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    {catResult.length} chars
+                  </Badge>
+                </div>
+                <Textarea
+                  readOnly
+                  value={catResult}
+                  className="min-h-[200px] font-mono text-sm"
+                />
+                {catHex && (
+                  <div>
+                    <p className="mb-1 text-xs text-muted-foreground">
+                      Hex (first 100 bytes):
+                    </p>
+                    <code className="block rounded bg-secondary p-2 text-xs break-all">
+                      {catHex}
+                    </code>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </PageShell>
+  );
+}
