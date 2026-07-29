@@ -200,7 +200,11 @@ export default function PinsPage() {
                 {pinsError}
               </ResultCard>
             )}
-            {pinEntries.length === 0 && !pinsError ? (
+            {pinsLoading ? (
+              <p className="py-8 text-center text-muted-foreground">
+                Loading pins...
+              </p>
+            ) : pinEntries.length === 0 && !pinsError ? (
               <p className="py-8 text-center text-muted-foreground">
                 No pinned content
               </p>

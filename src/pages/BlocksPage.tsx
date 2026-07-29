@@ -64,9 +64,15 @@ export default function BlocksPage() {
     setGetHex("");
     try {
       const buf = await api.blockGet(getCid);
-      setGetText(new TextDecoder().decode(buf));
+      const bytes = new Uint8Array(buf);
+      const isBinary = bytes.some((b) => b === 0 || (b < 32 && b !== 9 && b !== 10 && b !== 13));
+      if (isBinary) {
+        setGetText(`[Binary data — ${buf.byteLength} bytes]`);
+      } else {
+        setGetText(new TextDecoder().decode(buf));
+      }
       setGetHex(
-        Array.from(new Uint8Array(buf).slice(0, 100))
+        Array.from(bytes.slice(0, 100))
           .map((b) => b.toString(16).padStart(2, "0"))
           .join(" ") + (buf.byteLength > 100 ? " ..." : "")
       );

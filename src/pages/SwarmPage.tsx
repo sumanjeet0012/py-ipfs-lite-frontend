@@ -26,7 +26,7 @@ import {
 export default function SwarmPage() {
   const [peers, setPeers] = useState<any[]>([]);
   const [peerCount, setPeerCount] = useState(0);
-  const [peersLoading, setPeersLoading] = useState(false);
+  const [peersLoading, setPeersLoading] = useState(true);
   const [connectAddr, setConnectAddr] = useState("");
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectResult, setConnectResult] = useState<string | null>(null);
@@ -160,7 +160,11 @@ export default function SwarmPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {peers.length === 0 ? (
+            {peersLoading ? (
+              <p className="py-8 text-center text-muted-foreground">
+                Loading peers...
+              </p>
+            ) : peers.length === 0 ? (
               <p className="py-8 text-center text-muted-foreground">
                 No connected peers
               </p>

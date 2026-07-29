@@ -50,6 +50,8 @@ export default function RepoPage() {
     try {
       const data = await api.repoGc();
       setGcResult({ success: true, data });
+      fetchStats();
+      fetchRefs();
     } catch (e: any) {
       setGcResult({ success: false, message: e.message });
     } finally {

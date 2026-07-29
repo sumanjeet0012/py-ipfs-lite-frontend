@@ -114,6 +114,7 @@ export default function IpnsPage() {
             <CidInput
               value={resolveName}
               onChange={setResolveName}
+              onSubmit={handleResolve}
               placeholder="Enter IPNS name..."
               label="IPNS Name"
             />

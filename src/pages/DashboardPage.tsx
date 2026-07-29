@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [repoStat, setRepoStat] = useState<any>(null);
   const [peerCount, setPeerCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [fetchCid, setFetchCid] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -39,6 +40,12 @@ export default function DashboardPage() {
       if (id.status === "fulfilled") setIdentity(id.value);
       if (rs.status === "fulfilled") setRepoStat(rs.value);
       if (sp.status === "fulfilled") setPeerCount(sp.value.count ?? 0);
+      const failures = [v, id, rs, sp].filter((r) => r.status === "rejected");
+      if (failures.length === 4) {
+        setLoadError("Failed to connect to the API server. Is it running?");
+      } else if (failures.length > 0) {
+        setLoadError("Some data failed to load. Partial results shown.");
+      }
       setLoading(false);
     }
     load();
@@ -77,6 +84,11 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-6">
+          {loadError && (
+            <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {loadError}
+            </div>
+          )}
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
