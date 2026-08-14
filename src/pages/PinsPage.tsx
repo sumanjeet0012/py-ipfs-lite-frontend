@@ -58,28 +58,30 @@ export default function PinsPage() {
   }, []);
 
   const handlePin = async () => {
+    if (!pinCid.trim()) return;
     setPinLoading(true);
     setPinError(null);
     setPinResult(null);
     try {
-      setPinResult(await api.pinAdd(pinCid));
+      setPinResult(await api.pinAdd(pinCid.trim()));
       fetchPins();
     } catch (e: any) {
-      setPinError(e.message);
+      setPinError(e.message || "Failed to pin CID");
     } finally {
       setPinLoading(false);
     }
   };
 
   const handleUnpin = async () => {
+    if (!unpinCid.trim()) return;
     setUnpinLoading(true);
     setUnpinError(null);
     setUnpinResult(null);
     try {
-      setUnpinResult(await api.pinRm(unpinCid));
+      setUnpinResult(await api.pinRm(unpinCid.trim()));
       fetchPins();
     } catch (e: any) {
-      setUnpinError(e.message);
+      setUnpinError(e.message || "Failed to unpin CID");
     } finally {
       setUnpinLoading(false);
     }

@@ -4,14 +4,8 @@ import { PageShell } from "@/components/layout/PageShell";
 import { JsonViewer } from "@/components/shared/JsonViewer";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PeerBadge } from "@/components/shared/PeerBadge";
 import { RefreshCw } from "lucide-react";
 
 export default function DebugPage() {
@@ -70,7 +64,7 @@ export default function DebugPage() {
     fetchConnectionStats();
   }, []);
 
-  const renderPeerTable = (peers: string[], loading: boolean, error: string | null) => {
+  const renderPeerTable = (peerList: any[], loading: boolean, error: string | null) => {
     if (loading) {
       return (
         <p className="text-sm text-muted-foreground">Loading...</p>
@@ -81,7 +75,7 @@ export default function DebugPage() {
         <p className="text-sm text-destructive">{error}</p>
       );
     }
-    if (!peers || peers.length === 0) {
+    if (!peerList || peerList.length === 0) {
       return (
         <p className="text-sm text-muted-foreground">No peers found.</p>
       );
@@ -91,27 +85,41 @@ export default function DebugPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>#</TableHead>
+              <TableHead className="w-12">#</TableHead>
               <TableHead>Peer ID</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {peers.map((peerId: string, i: number) => (
-              <TableRow key={i}>
-                <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                <TableCell className="font-mono text-xs">
-                  {peerId}
-                </TableCell>
-              </TableRow>
-            ))}
+            {peerList.map((item: any, i: number) => {
+              const peerId =
+                typeof item === "string"
+                  ? item
+                  : item?.peer || item?.Peer || item?.id || item?.ID || JSON.stringify(item);
+              return (
+                <TableRow key={i}>
+                  <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    <PeerBadge peerId={peerId} showFull />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
     );
   };
 
-  const peers = peerstore?.peers ?? [];
-  const routes = routingTable?.peers ?? [];
+  const peers = Array.isArray(peerstore?.peers)
+    ? peerstore.peers
+    : Array.isArray(peerstore)
+    ? peerstore
+    : [];
+  const routes = Array.isArray(routingTable?.peers)
+    ? routingTable.peers
+    : Array.isArray(routingTable)
+    ? routingTable
+    : [];
 
   return (
     <PageShell

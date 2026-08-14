@@ -95,8 +95,8 @@ export default function IpnsPage() {
               >
                 {publishResult.success ? (
                   <div className="flex flex-col gap-1 font-mono text-xs">
-                    <span>Name: {publishResult.data.Name}</span>
-                    <span>Value: {publishResult.data.Value}</span>
+                    <span>Name: {publishResult.data?.Name ?? JSON.stringify(publishResult.data)}</span>
+                    {publishResult.data?.Value && <span>Value: {publishResult.data.Value}</span>}
                   </div>
                 ) : (
                   <p>{publishResult.message}</p>
@@ -131,7 +131,7 @@ export default function IpnsPage() {
               >
                 {resolveResult.success ? (
                   <p className="font-mono text-xs">
-                    {resolveResult.data.Path}
+                    {resolveResult.data?.Path ?? JSON.stringify(resolveResult.data)}
                   </p>
                 ) : (
                   <p>{resolveResult.message}</p>

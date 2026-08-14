@@ -1,24 +1,27 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 
 const POLL_MS = 10_000;
 
 export function useConnectionStatus(): boolean {
   const [connected, setConnected] = useState(false);
-  const timer = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
+    let isMounted = true;
     async function check() {
       try {
         await api.version();
-        setConnected(true);
+        if (isMounted) setConnected(true);
       } catch {
-        setConnected(false);
+        if (isMounted) setConnected(false);
       }
     }
     check();
-    timer.current = setInterval(check, POLL_MS);
-    return () => clearInterval(timer.current);
+    const interval = setInterval(check, POLL_MS);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return connected;

@@ -31,7 +31,15 @@ export function FileDropzone({ onFile, accept }: FileDropzoneProps) {
   );
 
   const acceptMap = accept
-    ? { [accept.split("/")[0]]: [accept] }
+    ? accept.split(",").reduce<Record<string, string[]>>((acc, item) => {
+        const trimmed = item.trim();
+        if (trimmed.startsWith(".")) {
+          acc["application/octet-stream"] = [...(acc["application/octet-stream"] || []), trimmed];
+        } else if (trimmed.includes("/")) {
+          acc[trimmed] = [];
+        }
+        return acc;
+      }, {})
     : undefined;
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

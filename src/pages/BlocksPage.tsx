@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { formatBytes } from "@/lib/format";
 import { PageShell } from "@/components/layout/PageShell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,29 +46,31 @@ export default function BlocksPage() {
   const [rmError, setRmError] = useState<string | null>(null);
 
   const handleStat = async () => {
+    if (!statCid.trim()) return;
     setStatLoading(true);
     setStatError(null);
     setStatResult(null);
     try {
-      setStatResult(await api.blockStat(statCid));
+      setStatResult(await api.blockStat(statCid.trim()));
     } catch (e: any) {
-      setStatError(e.message);
+      setStatError(e.message || "Failed to fetch block stat");
     } finally {
       setStatLoading(false);
     }
   };
 
   const handleGet = async () => {
+    if (!getCid.trim()) return;
     setGetLoading(true);
     setGetError(null);
     setGetText("");
     setGetHex("");
     try {
-      const buf = await api.blockGet(getCid);
+      const buf = await api.blockGet(getCid.trim());
       const bytes = new Uint8Array(buf);
       const isBinary = bytes.some((b) => b === 0 || (b < 32 && b !== 9 && b !== 10 && b !== 13));
       if (isBinary) {
-        setGetText(`[Binary data — ${buf.byteLength} bytes]`);
+        setGetText(`[Binary data — ${formatBytes(buf.byteLength)}]`);
       } else {
         setGetText(new TextDecoder().decode(buf));
       }
@@ -77,7 +80,7 @@ export default function BlocksPage() {
           .join(" ") + (buf.byteLength > 100 ? " ..." : "")
       );
     } catch (e: any) {
-      setGetError(e.message);
+      setGetError(e.message || "Failed to retrieve block");
     } finally {
       setGetLoading(false);
     }
@@ -90,20 +93,21 @@ export default function BlocksPage() {
     try {
       setPutResult(await api.blockPut(file));
     } catch (e: any) {
-      setPutError(e.message);
+      setPutError(e.message || "Failed to store block");
     } finally {
       setPutLoading(false);
     }
   };
 
   const handleRm = async () => {
+    if (!rmCid.trim()) return;
     setRmLoading(true);
     setRmError(null);
     setRmResult(null);
     try {
-      setRmResult(await api.blockRm(rmCid));
+      setRmResult(await api.blockRm(rmCid.trim()));
     } catch (e: any) {
-      setRmError(e.message);
+      setRmError(e.message || "Failed to remove block");
     } finally {
       setRmLoading(false);
     }
@@ -158,7 +162,7 @@ export default function BlocksPage() {
                     </p>
                     <p>
                       <span className="text-muted-foreground">Size:</span>{" "}
-                      <Badge>{statResult.Size} bytes</Badge>
+                      <Badge>{formatBytes(statResult.Size)}</Badge>
                     </p>
                   </div>
                 </ResultCard>
@@ -239,7 +243,7 @@ export default function BlocksPage() {
                     </p>
                     <p>
                       <span className="text-muted-foreground">Size:</span>{" "}
-                      {putResult.Size} bytes
+                      <Badge>{formatBytes(putResult.Size)}</Badge>
                     </p>
                   </div>
                 </ResultCard>

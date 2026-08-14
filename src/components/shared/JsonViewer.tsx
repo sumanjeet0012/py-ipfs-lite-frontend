@@ -5,6 +5,7 @@ interface JsonViewerProps {
 }
 
 function syntaxHighlight(json: string): React.ReactNode {
+  if (!json) return null;
   let key = 0;
 
   const replaced = json.replace(
@@ -53,7 +54,22 @@ function syntaxHighlight(json: string): React.ReactNode {
 }
 
 export function JsonViewer({ data }: JsonViewerProps) {
-  const formatted = JSON.stringify(data, null, 2);
+  let formatted = "";
+  try {
+    if (data === undefined) {
+      formatted = "undefined";
+    } else if (typeof data === "string") {
+      try {
+        formatted = JSON.stringify(JSON.parse(data), null, 2);
+      } catch {
+        formatted = data;
+      }
+    } else {
+      formatted = JSON.stringify(data, null, 2) ?? "";
+    }
+  } catch {
+    formatted = String(data);
+  }
 
   return (
     <pre

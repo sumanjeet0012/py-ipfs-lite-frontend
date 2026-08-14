@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check } from "lucide-react";
 
@@ -8,6 +8,7 @@ interface PeerBadgeProps {
 }
 
 function truncatePeerId(peerId: string): string {
+  if (!peerId || typeof peerId !== "string") return String(peerId ?? "");
   if (peerId.length <= 24) return peerId;
   return `${peerId.slice(0, 12)}...${peerId.slice(-8)}`;
 }
@@ -15,14 +16,23 @@ function truncatePeerId(peerId: string): string {
 export function PeerBadge({ peerId, showFull = false }: PeerBadgeProps) {
   const [copied, setCopied] = useState(false);
   const [hovering, setHovering] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const displayId = showFull ? peerId : truncatePeerId(peerId);
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const safePeerId = typeof peerId === "string" ? peerId : String(peerId ?? "");
+  const displayId = showFull ? safePeerId : truncatePeerId(safePeerId);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(peerId);
+      await navigator.clipboard.writeText(safePeerId);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "@/lib/api";
+import { formatBytes } from "@/lib/format";
 import { PageShell } from "@/components/layout/PageShell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ function downloadBlob(buf: ArrayBuffer, filename: string) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export default function FilesPage() {
@@ -56,15 +57,16 @@ export default function FilesPage() {
       const buf = await api.cat(cid);
       setCatBuf(buf);
       const bytes = new Uint8Array(buf);
+      const sample = bytes.slice(0, 4096);
       const isBinary =
         buf.byteLength > 0 &&
-        (bytes.includes(0) || new TextDecoder().decode(buf).includes("\uFFFD"));
+        (sample.includes(0) || new TextDecoder().decode(sample).includes("\uFFFD"));
       if (isBinary) {
         const hex = Array.from(bytes.slice(0, 100))
           .map((b) => b.toString(16).padStart(2, "0"))
           .join(" ");
         setCatHex(hex + (buf.byteLength > 100 ? " ..." : ""));
-        setCatResult(`[Binary data — ${buf.byteLength} bytes]`);
+        setCatResult(`[Binary data — ${formatBytes(buf.byteLength)}]`);
       } else {
         const text = new TextDecoder().decode(buf);
         setCatResult(text);

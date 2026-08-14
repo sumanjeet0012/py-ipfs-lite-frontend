@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { formatBytes } from "@/lib/format";
@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { StatGrid } from "@/components/shared/StatGrid";
 import {
   Server,
-  Users,
   Database,
   Copy,
   ExternalLink,
@@ -27,6 +26,13 @@ export default function DashboardPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [fetchCid, setFetchCid] = useState("");
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -39,7 +45,11 @@ export default function DashboardPage() {
       if (v.status === "fulfilled") setVersion(v.value);
       if (id.status === "fulfilled") setIdentity(id.value);
       if (rs.status === "fulfilled") setRepoStat(rs.value);
-      if (sp.status === "fulfilled") setPeerCount(sp.value.count ?? 0);
+      if (sp.status === "fulfilled") {
+        setPeerCount(
+          sp.value.count ?? sp.value.peers?.length ?? sp.value.Peers?.length ?? 0
+        );
+      }
       const failures = [v, id, rs, sp].filter((r) => r.status === "rejected");
       if (failures.length === 4) {
         setLoadError("Failed to connect to the API server. Is it running?");
@@ -56,7 +66,8 @@ export default function DashboardPage() {
       try {
         await navigator.clipboard.writeText(identity.ID);
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
       } catch {
         setCopied(false);
       }
@@ -148,15 +159,19 @@ export default function DashboardPage() {
                   placeholder="Enter a CID to fetch..."
                   value={fetchCid}
                   onChange={(e) => setFetchCid(e.target.value)}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" &&
-                    fetchCid &&
-                    navigate(`/files?cid=${fetchCid}`)
-                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && fetchCid.trim()) {
+                      navigate(`/files?cid=${encodeURIComponent(fetchCid.trim())}`);
+                    }
+                  }}
                 />
                 <Button
-                  onClick={() => fetchCid && navigate(`/files?cid=${fetchCid}`)}
-                  disabled={!fetchCid}
+                  onClick={() => {
+                    if (fetchCid.trim()) {
+                      navigate(`/files?cid=${encodeURIComponent(fetchCid.trim())}`);
+                    }
+                  }}
+                  disabled={!fetchCid.trim()}
                 >
                   Fetch
                 </Button>

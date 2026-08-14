@@ -1,4 +1,5 @@
-const BASE = import.meta.env.VITE_API_URL || ""
+const RAW_BASE = import.meta.env.VITE_API_URL || ""
+const BASE = RAW_BASE.replace(/\/+$/, "")
 
 function errorMessage(status: number, statusText: string, body: string): string {
   try {

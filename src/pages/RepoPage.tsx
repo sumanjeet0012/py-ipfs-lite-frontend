@@ -110,13 +110,19 @@ export default function RepoPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {refs.map((ref, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-mono text-xs">
-                        {ref.Ref}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {refs.map((ref, i) => {
+                    const refString =
+                      typeof ref === "string"
+                        ? ref
+                        : ref?.Ref ?? ref?.ref ?? JSON.stringify(ref);
+                    return (
+                      <TableRow key={i}>
+                        <TableCell className="font-mono text-xs">
+                          {refString}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

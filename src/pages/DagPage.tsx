@@ -124,7 +124,11 @@ export default function DagPage() {
               <ResultCard success={true} title="Node Stored">
                 <p className="text-sm">
                   <span className="text-muted-foreground">CID:</span>{" "}
-                  <code className="text-accent">{putResult.Cid["/"]}</code>
+                  <code className="text-accent">
+                    {typeof putResult.Cid === "object"
+                      ? putResult.Cid?.["/"] ?? JSON.stringify(putResult.Cid)
+                      : putResult.Cid || putResult.cid || String(putResult)}
+                  </code>
                 </p>
               </ResultCard>
             )}

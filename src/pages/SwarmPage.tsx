@@ -38,9 +38,14 @@ export default function SwarmPage() {
     setPeersLoading(true);
     try {
       const res = await api.swarmPeers();
-      setPeers(res.peers || []);
-      setPeerCount(res.count || 0);
+      const peersList = res.peers || res.Peers || [];
+      setPeers(Array.isArray(peersList) ? peersList : []);
+      setPeerCount(
+        res.count ?? (Array.isArray(peersList) ? peersList.length : 0)
+      );
     } catch {
+      setPeers([]);
+      setPeerCount(0);
     } finally {
       setPeersLoading(false);
     }
@@ -56,12 +61,12 @@ export default function SwarmPage() {
     setConnectError(null);
     setConnectResult(null);
     try {
-      const res = await api.swarmConnect(connectAddr);
-      setConnectResult(res.Strings?.[0] || "Connected");
+      const res = await api.swarmConnect(connectAddr.trim());
+      setConnectResult(res.Strings?.[0] || res.message || "Connected");
       setConnectAddr("");
       fetchPeers();
     } catch (e: any) {
-      setConnectError(e.message);
+      setConnectError(e.message || "Failed to connect to peer");
     } finally {
       setConnectLoading(false);
     }
@@ -180,15 +185,20 @@ export default function SwarmPage() {
                   </TableHeader>
                   <TableBody>
                     {peers.map((p: any, i: number) => {
-                      const peerId = p.peer || p.Peer || "";
+                      const peerId =
+                        typeof p === "string"
+                          ? p
+                          : p?.peer || p?.Peer || p?.id || p?.ID || "";
+                      const rawAddrs = p?.addrs || p?.Addrs || [];
+                      const addrs = Array.isArray(rawAddrs) ? rawAddrs : [];
                       return (
-                        <TableRow key={i}>
+                        <TableRow key={peerId || i}>
                           <TableCell>
                             <PeerBadge peerId={peerId} />
                           </TableCell>
                           <TableCell>
                             <div className="max-w-md space-y-0.5">
-                              {(p.addrs || p.Addrs || [])
+                              {addrs
                                 .slice(0, 2)
                                 .map((addr: string, j: number) => (
                                   <div
@@ -198,9 +208,9 @@ export default function SwarmPage() {
                                     {addr}
                                   </div>
                                 ))}
-                              {(p.addrs || p.Addrs || []).length > 2 && (
+                              {addrs.length > 2 && (
                                 <span className="text-xs text-muted-foreground">
-                                  +{(p.addrs || p.Addrs || []).length - 2} more
+                                  +{addrs.length - 2} more
                                 </span>
                               )}
                             </div>
@@ -209,9 +219,9 @@ export default function SwarmPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDisconnect(peerId)}
-                              disabled={disconnectLoading === peerId}
-                              aria-label={`Disconnect from ${peerId.slice(0, 12)}`}
+                              onClick={() => peerId && handleDisconnect(peerId)}
+                              disabled={disconnectLoading === peerId || !peerId}
+                              aria-label={peerId ? `Disconnect from ${peerId.slice(0, 12)}` : "Disconnect"}
                             >
                               {disconnectLoading === peerId ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />

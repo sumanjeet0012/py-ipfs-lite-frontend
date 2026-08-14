@@ -47,7 +47,7 @@ export default function App() {
     <BrowserRouter>
       <div className="flex h-screen overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-hidden">
           <ErrorBoundary>
             <Routes>
               <Route path="/" element={<DashboardPage />} />
@@ -62,7 +62,7 @@ export default function App() {
               <Route path="*" element={<DashboardPage />} />
             </Routes>
           </ErrorBoundary>
-        </main>
+        </div>
       </div>
     </BrowserRouter>
   );
