@@ -22,6 +22,8 @@ import {
   FileCode,
   ShieldCheck,
   Layers,
+  ArrowUpRight,
+  ArrowDownLeft,
 } from "lucide-react";
 
 export default function MetricsPage() {
@@ -482,10 +484,45 @@ export default function MetricsPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-sm font-semibold">
                   <Layers className="h-4 w-4 text-primary" />
-                  Multiplexed Streams & Protocols
+                  Multiplexed Streams & Direction Breakdown
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Stream Direction Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-medium text-sky-500">Opened by Us (Initiator)</span>
+                      <ArrowUpRight className="h-3.5 w-3.5 text-sky-500" />
+                    </div>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-xl font-bold text-foreground">
+                        {metrics?.streamsOutboundActive ?? 0}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">active</span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Total opened: <span className="font-medium text-foreground">{metrics?.streamsOutboundTotal ?? 0}</span>
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-medium text-emerald-500">Received by Us (Receiver)</span>
+                      <ArrowDownLeft className="h-3.5 w-3.5 text-emerald-500" />
+                    </div>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-xl font-bold text-foreground">
+                        {metrics?.streamsInboundActive ?? 0}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">active</span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Total received: <span className="font-medium text-foreground">{metrics?.streamsInboundTotal ?? 0}</span>
+                    </p>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg border border-border bg-muted/20 p-2.5">
                     <span className="text-[11px] text-muted-foreground">Streams Opened Total</span>
@@ -497,9 +534,13 @@ export default function MetricsPage() {
                   </div>
                 </div>
 
+                {/* Active Open Streams by Protocol */}
                 <div>
-                  <span className="text-xs font-medium text-muted-foreground">Open Streams by Protocol</span>
-                  <div className="mt-2 max-h-36 overflow-y-auto space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Active Open Streams by Protocol</span>
+                    <span className="text-[10px] text-muted-foreground">Live snapshot</span>
+                  </div>
+                  <div className="mt-2 max-h-32 overflow-y-auto space-y-1">
                     {metrics && Object.keys(metrics.streamsActiveByProtocol).length > 0 ? (
                       Object.entries(metrics.streamsActiveByProtocol).map(([proto, count]) => (
                         <div
@@ -515,7 +556,48 @@ export default function MetricsPage() {
                         </div>
                       ))
                     ) : (
-                      <p className="text-xs text-muted-foreground">No active open streams at snapshot.</p>
+                      <p className="text-xs text-muted-foreground">No long-lived open streams at snapshot (most close within 50ms).</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cumulative Lifetime Streams by Protocol */}
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Cumulative Streams by Protocol</span>
+                    <span className="text-[10px] text-muted-foreground">Lifetime Total & Direction</span>
+                  </div>
+                  <div className="mt-2 max-h-48 overflow-y-auto space-y-1.5">
+                    {metrics && Object.keys(metrics.streamsTotalByProtocol).length > 0 ? (
+                      Object.entries(metrics.streamsTotalByProtocol)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([proto, totalCount]) => {
+                          const outCount = metrics.streamsTotalByProtocolOutbound[proto] || 0;
+                          const inCount = metrics.streamsTotalByProtocolInbound[proto] || 0;
+                          return (
+                            <div
+                              key={proto}
+                              className="flex items-center justify-between rounded-md border border-border/50 bg-background/50 px-2.5 py-1.5 text-xs"
+                            >
+                              <span className="font-mono text-foreground font-medium truncate max-w-[220px]">
+                                {proto}
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0 border-sky-500/30 text-sky-500 bg-sky-500/5">
+                                  {outCount} out
+                                </Badge>
+                                <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0 border-emerald-500/30 text-emerald-500 bg-emerald-500/5">
+                                  {inCount} in
+                                </Badge>
+                                <Badge variant="secondary" className="font-mono text-[10px] px-2 py-0 font-semibold">
+                                  {totalCount}
+                                </Badge>
+                              </div>
+                            </div>
+                          );
+                        })
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Protocol handshake negotiation in progress...</p>
                     )}
                   </div>
                 </div>

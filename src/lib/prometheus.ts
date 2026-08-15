@@ -45,9 +45,17 @@ export interface ParsedPrometheusMetrics {
   // Streams
   streamsOpenedTotal: number;
   streamsClosedTotal: number;
+  streamsOutboundTotal: number;
+  streamsInboundTotal: number;
+  streamsOutboundActive: number;
+  streamsInboundActive: number;
   streamsLeakedTotal: number;
   streamsResetsTotal: number;
   streamsActiveByProtocol: Record<string, number>;
+  streamsTotalByProtocol: Record<string, number>;
+  streamsTotalByProtocolOutbound: Record<string, number>;
+  streamsTotalByProtocolInbound: Record<string, number>;
+  streamsActiveByDirection: Record<string, number>;
 
   // Storage & Bitswap & DHT
   blockstoreBlocksTotal: number;
@@ -182,9 +190,17 @@ export function parsePrometheusText(text: string): ParsedPrometheusMetrics {
     },
     streamsOpenedTotal: 0,
     streamsClosedTotal: 0,
+    streamsOutboundTotal: 0,
+    streamsInboundTotal: 0,
+    streamsOutboundActive: 0,
+    streamsInboundActive: 0,
     streamsLeakedTotal: 0,
     streamsResetsTotal: 0,
     streamsActiveByProtocol: {},
+    streamsTotalByProtocol: {},
+    streamsTotalByProtocolOutbound: {},
+    streamsTotalByProtocolInbound: {},
+    streamsActiveByDirection: {},
     blockstoreBlocksTotal: 0,
     blockstoreSizeBytes: 0,
     bitswapBytesSent: 0,
@@ -265,6 +281,17 @@ export function parsePrometheusText(text: string): ParsedPrometheusMetrics {
         result.streamsOpenedTotal = value;
       } else if (name === "ipfs_streams_closed_total") {
         result.streamsClosedTotal = value;
+      } else if (name === "ipfs_streams_outbound_total") {
+        result.streamsOutboundTotal = value;
+      } else if (name === "ipfs_streams_inbound_total") {
+        result.streamsInboundTotal = value;
+      } else if (name === "ipfs_streams_outbound_active") {
+        result.streamsOutboundActive = value;
+      } else if (name === "ipfs_streams_inbound_active") {
+        result.streamsInboundActive = value;
+      } else if (name === "ipfs_streams_active_by_direction") {
+        const d = labels.direction || "unknown";
+        result.streamsActiveByDirection[d] = value;
       } else if (name === "ipfs_streams_leaked_total") {
         result.streamsLeakedTotal = value;
       } else if (name === "ipfs_streams_resets_total") {
@@ -272,6 +299,16 @@ export function parsePrometheusText(text: string): ParsedPrometheusMetrics {
       } else if (name === "ipfs_streams_active") {
         const proto = labels.protocol || "unknown";
         result.streamsActiveByProtocol[proto] = value;
+      } else if (name === "ipfs_streams_by_protocol_total") {
+        const proto = labels.protocol || "unknown";
+        const dir = labels.direction || "all";
+        if (dir === "outbound") {
+          result.streamsTotalByProtocolOutbound[proto] = value;
+        } else if (dir === "inbound") {
+          result.streamsTotalByProtocolInbound[proto] = value;
+        } else {
+          result.streamsTotalByProtocol[proto] = value;
+        }
       }
 
       // BlockStore & Bitswap & GC
