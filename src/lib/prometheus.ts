@@ -13,6 +13,7 @@ export interface MetricFamily {
 
 export interface ParsedPrometheusMetrics {
   // Process / System
+  pid: number;
   cpuPercent: number;
   memoryRssBytes: number;
   memoryVmsBytes: number;
@@ -152,6 +153,7 @@ export function parsePrometheusText(text: string): ParsedPrometheusMetrics {
 
   // Build aggregated typed output
   const result: ParsedPrometheusMetrics = {
+    pid: 0,
     cpuPercent: 0,
     memoryRssBytes: 0,
     memoryVmsBytes: 0,
@@ -194,7 +196,9 @@ export function parsePrometheusText(text: string): ParsedPrometheusMetrics {
       const { name, labels, value } = sample;
 
       // Process & System
-      if (name === "ipfs_process_cpu_percent" || name === "process_cpu_percent") {
+      if (name === "ipfs_process_pid") {
+        result.pid = Math.round(value);
+      } else if (name === "ipfs_process_cpu_percent" || name === "process_cpu_percent") {
         result.cpuPercent = value;
       } else if (name === "ipfs_process_memory_rss_bytes" || name === "process_resident_memory_bytes") {
         result.memoryRssBytes = value;

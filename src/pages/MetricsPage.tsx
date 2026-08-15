@@ -224,7 +224,7 @@ export default function MetricsPage() {
                 </div>
                 <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
                   <span>Open FDs: {metrics?.openFds ?? 0}</span>
-                  <span>PID: Main Daemon</span>
+                  <span>PID: {metrics?.pid ? metrics.pid : "—"}</span>
                 </div>
               </CardContent>
             </Card>
