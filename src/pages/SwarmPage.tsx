@@ -403,6 +403,7 @@ export default function SwarmPage() {
                       <TableHead>Peer ID</TableHead>
                       <TableHead>Connection Age</TableHead>
                       <TableHead>Transport / Dir</TableHead>
+                      <TableHead>Active Streams</TableHead>
                       <TableHead>Addresses</TableHead>
                       <TableHead className="w-[60px]"></TableHead>
                     </TableRow>
@@ -418,6 +419,9 @@ export default function SwarmPage() {
                       const duration = p.duration_seconds || 0;
                       const transport = p.transport || "unknown";
                       const direction = p.direction || "unknown";
+                      const streamsTotal = p?.streams_total || 0;
+                      const streamsOut = p?.streams_outbound || 0;
+                      const streamsIn = p?.streams_inbound || 0;
 
                       return (
                         <TableRow key={peerId || i}>
@@ -447,6 +451,20 @@ export default function SwarmPage() {
                                 ({direction})
                               </span>
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {streamsTotal > 0 ? (
+                              <div className="flex items-center gap-1">
+                                <Badge variant="outline" className="text-[10px] font-mono border-sky-500/30 text-sky-500 px-1 py-0">
+                                  {streamsOut} out
+                                </Badge>
+                                <Badge variant="outline" className="text-[10px] font-mono border-emerald-500/30 text-emerald-500 px-1 py-0">
+                                  {streamsIn} in
+                                </Badge>
+                              </div>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground font-mono">0 active</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <div className="max-w-xs space-y-0.5">
