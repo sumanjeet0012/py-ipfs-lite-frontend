@@ -1,3 +1,5 @@
+import { parsePrometheusText } from "./prometheus"
+
 const RAW_BASE = import.meta.env.VITE_API_URL || ""
 const BASE = RAW_BASE.replace(/\/+$/, "")
 
@@ -71,6 +73,15 @@ async function jsonPost(path: string, data: object): Promise<any> {
   return res.json()
 }
 
+async function getText(path: string): Promise<string> {
+  const res = await fetch(`${BASE}${path}`)
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(errorMessage(res.status, res.statusText, body))
+  }
+  return res.text()
+}
+
 export const api = {
   version: () => get("/api/v0/version"),
 
@@ -125,4 +136,11 @@ export const api = {
   debugPeerstore: () => get("/api/v0/debug/peerstore"),
 
   debugRoutingTable: () => get("/api/v0/debug/routing_table"),
+
+  metrics: () => getText("/metrics"),
+
+  prometheusMetrics: async () => {
+    const text = await getText("/metrics")
+    return parsePrometheusText(text)
+  },
 }

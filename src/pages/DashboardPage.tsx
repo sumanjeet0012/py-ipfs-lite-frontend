@@ -34,13 +34,16 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const [promMetrics, setPromMetrics] = useState<any>(null);
+
   useEffect(() => {
     async function load() {
-      const [v, id, rs, sp] = await Promise.allSettled([
+      const [v, id, rs, sp, pm] = await Promise.allSettled([
         api.version(),
         api.id(),
         api.repoStat(),
         api.swarmPeers(),
+        api.prometheusMetrics(),
       ]);
       if (v.status === "fulfilled") setVersion(v.value);
       if (id.status === "fulfilled") setIdentity(id.value);
@@ -50,6 +53,8 @@ export default function DashboardPage() {
           sp.value.count ?? sp.value.peers?.length ?? sp.value.Peers?.length ?? 0
         );
       }
+      if (pm.status === "fulfilled") setPromMetrics(pm.value);
+
       const failures = [v, id, rs, sp].filter((r) => r.status === "rejected");
       if (failures.length === 4) {
         setLoadError("Failed to connect to the API server. Is it running?");
@@ -81,7 +86,15 @@ export default function DashboardPage() {
       label: "Repo Size",
       value: repoStat ? formatBytes(repoStat.RepoSize) : "...",
     },
-    { label: "Connected Peers", value: peerCount },
+    { label: "Connected Peers", value: promMetrics?.swarmPeers ?? peerCount },
+    {
+      label: "CPU Utilization",
+      value: promMetrics ? `${promMetrics.cpuPercent.toFixed(1)}%` : "...",
+    },
+    {
+      label: "Process Memory",
+      value: promMetrics ? formatBytes(promMetrics.memoryRssBytes) : "...",
+    },
   ];
 
   return (
