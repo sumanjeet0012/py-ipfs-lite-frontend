@@ -23,6 +23,9 @@ export interface ParsedPrometheusMetrics {
   // Swarm & Connections
   swarmPeers: number;
   swarmConnectionsTotal: number;
+  peersOver30m: number;
+  peersOver10m: number;
+  peersOver5m: number;
   activeByTransport: Record<string, number>;
   activeByDirection: Record<string, number>;
   activePeersByAge: Record<string, number>;
@@ -161,6 +164,9 @@ export function parsePrometheusText(text: string): ParsedPrometheusMetrics {
     uptimeSeconds: 0,
     swarmPeers: 0,
     swarmConnectionsTotal: 0,
+    peersOver30m: 0,
+    peersOver10m: 0,
+    peersOver5m: 0,
     activeByTransport: {},
     activeByDirection: {},
     activePeersByAge: {},
@@ -215,6 +221,12 @@ export function parsePrometheusText(text: string): ParsedPrometheusMetrics {
         result.swarmPeers = value;
       } else if (name === "ipfs_swarm_connections_total") {
         result.swarmConnectionsTotal = value;
+      } else if (name === "ipfs_swarm_peers_connected_over_30m") {
+        result.peersOver30m = Math.round(value);
+      } else if (name === "ipfs_swarm_peers_connected_over_10m") {
+        result.peersOver10m = Math.round(value);
+      } else if (name === "ipfs_swarm_peers_connected_over_5m") {
+        result.peersOver5m = Math.round(value);
       } else if (name === "ipfs_swarm_connections") {
         const t = labels.transport;
         const d = labels.direction;

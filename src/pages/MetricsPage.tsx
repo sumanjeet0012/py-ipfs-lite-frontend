@@ -347,31 +347,63 @@ export default function MetricsPage() {
             {/* Connection Lifespan Breakdown */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                  <Clock className="h-4 w-4 text-primary" />
-                  Active Peer Lifespan Tiers
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <Clock className="h-4 w-4 text-primary" />
+                    Active Peer Connection Age Tiers
+                  </CardTitle>
+                  <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs">
+                    {metrics ? `${metrics.peersOver30m} peers > 30m` : "—"}
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-xs text-muted-foreground">
-                  Distribution of currently connected peers by how long their sessions have been maintained:
-                </p>
-                <div className="space-y-2">
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-center">
+                    <span className="text-[10px] font-medium text-muted-foreground">&gt; 30m Stable</span>
+                    <p className="mt-0.5 text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                      {metrics?.peersOver30m ?? 0}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-2.5 text-center">
+                    <span className="text-[10px] font-medium text-muted-foreground">&gt; 10m Extended</span>
+                    <p className="mt-0.5 text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {metrics?.peersOver10m ?? 0}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-2.5 text-center">
+                    <span className="text-[10px] font-medium text-muted-foreground">&gt; 5m Active</span>
+                    <p className="mt-0.5 text-lg font-bold text-amber-600 dark:text-amber-400">
+                      {metrics?.peersOver5m ?? 0}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
                   {metrics &&
                     Object.entries(metrics.activePeersByAge).map(([tier, count]) => {
                       const total = metrics.swarmPeers || 1;
                       const pct = Math.min(100, Math.round((count / total) * 100));
+                      const is30m = tier.includes("30m") || tier.includes("over_30m");
                       return (
                         <div key={tier} className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-mono text-muted-foreground">{tier}</span>
-                            <span className="font-medium text-foreground">
+                            <span className="font-mono text-muted-foreground">
+                              {tier.replace(/_/g, " ").replace(/\(.*?\)/g, "")}
+                            </span>
+                            <span
+                              className={`font-mono text-xs font-semibold ${
+                                is30m ? "text-emerald-500" : "text-foreground"
+                              }`}
+                            >
                               {count} peers ({pct}%)
                             </span>
                           </div>
                           <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                             <div
-                              className="h-full rounded-full bg-primary transition-all duration-500"
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                is30m ? "bg-emerald-500" : "bg-primary"
+                              }`}
                               style={{ width: `${pct}%` }}
                             />
                           </div>
@@ -379,7 +411,9 @@ export default function MetricsPage() {
                       );
                     })}
                   {(!metrics || Object.keys(metrics.activePeersByAge).length === 0) && (
-                    <p className="text-xs text-muted-foreground">Aggregating peer age distribution...</p>
+                    <p className="text-xs text-muted-foreground">
+                      Aggregating peer age distribution...
+                    </p>
                   )}
                 </div>
               </CardContent>
