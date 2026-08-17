@@ -24,7 +24,93 @@ import {
   Layers,
   ArrowUpRight,
   ArrowDownLeft,
+  Network,
+  Fingerprint,
+  Timer,
+  Send,
+  Route,
+  Radar,
+  Globe,
 } from "lucide-react";
+
+function StatTile({
+  label,
+  value,
+  sub,
+  tone = "default",
+}: {
+  label: string;
+  value: React.ReactNode;
+  sub?: React.ReactNode;
+  tone?: "default" | "success" | "failure" | "accent";
+}) {
+  const valueColor =
+    tone === "success"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : tone === "failure"
+        ? "text-rose-600 dark:text-rose-400"
+        : tone === "accent"
+          ? "text-primary"
+          : "text-foreground";
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-2.5">
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <p className={`mt-1 text-lg font-bold ${valueColor}`}>{value}</p>
+      {sub && <p className="mt-0.5 text-[10px] text-muted-foreground">{sub}</p>}
+    </div>
+  );
+}
+
+function SuccessRateBadge({ success, failure }: { success: number; failure: number }) {
+  const total = success + failure;
+  const pct = total > 0 ? Math.round((success / total) * 100) : 100;
+  return (
+    <Badge
+      className={
+        pct >= 90
+          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs"
+          : pct >= 70
+            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 text-xs"
+            : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 text-xs"
+      }
+    >
+      {pct}% success rate
+    </Badge>
+  );
+}
+
+function MetricBar({
+  label,
+  value,
+  total,
+  color,
+  sub,
+}: {
+  label: string;
+  value: number;
+  total: number;
+  color: string;
+  sub?: string;
+}) {
+  const pct = total > 0 ? Math.min(100, Math.round((value / total) * 100)) : 0;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-mono text-muted-foreground">{label}</span>
+        <span className="font-mono font-semibold text-foreground">
+          {value}
+          {sub && <span className="ml-1 font-normal text-muted-foreground">{sub}</span>}
+        </span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${color}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function MetricsPage() {
   const [metrics, setMetrics] = useState<ParsedPrometheusMetrics | null>(null);
@@ -272,6 +358,419 @@ export default function MetricsPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* libp2p Protocol Stack Health */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Transport & Dialing */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <Network className="h-4 w-4 text-primary" />
+                    Transport Dialing & Inbound Connections
+                  </CardTitle>
+                  <SuccessRateBadge
+                    success={
+                      metrics
+                        ? Object.values(metrics.libp2p.transport.dials).reduce(
+                            (a, b) => a + b.success,
+                            0
+                          )
+                        : 0
+                    }
+                    failure={
+                      metrics
+                        ? Object.values(metrics.libp2p.transport.dials).reduce(
+                            (a, b) => a + b.failure,
+                            0
+                          )
+                        : 0
+                    }
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Dial attempts (lifetime)
+                  </span>
+                  <div className="mt-2 space-y-2">
+                    {metrics &&
+                      Object.entries(metrics.libp2p.transport.dials).map(([transport, d]) => (
+                        <div key={transport} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-mono text-muted-foreground uppercase">
+                              {transport}
+                            </span>
+                            <span className="flex items-center gap-2">
+                              <span className="font-mono text-emerald-500 font-semibold">
+                                {d.success} ok
+                              </span>
+                              <span className="font-mono text-rose-500 font-semibold">
+                                {d.failure} fail
+                              </span>
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                            <div
+                              className="h-full rounded-full bg-emerald-500"
+                              style={{
+                                width: `${
+                                  d.success + d.failure > 0
+                                    ? Math.min(100, (d.success / (d.success + d.failure)) * 100)
+                                    : 0
+                                }%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    {(!metrics || Object.keys(metrics.libp2p.transport.dials).length === 0) && (
+                      <p className="text-xs text-muted-foreground">
+                        No dial events recorded yet.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Inbound connections (lifetime)
+                  </span>
+                  <div className="mt-2 grid grid-cols-1 gap-2">
+                    {metrics &&
+                      Object.entries(metrics.libp2p.transport.inbound).map(([transport, d]) => (
+                        <div
+                          key={transport}
+                          className="flex items-center justify-between rounded-md border border-border/50 bg-background/50 px-2.5 py-1.5 text-xs"
+                        >
+                          <span className="font-mono text-muted-foreground uppercase">
+                            {transport}
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <span className="font-mono text-emerald-500">{d.success} ok</span>
+                            <span className="font-mono text-rose-500">{d.failure} fail</span>
+                          </span>
+                        </div>
+                      ))}
+                    {(!metrics || Object.keys(metrics.libp2p.transport.inbound).length === 0) && (
+                      <p className="text-xs text-muted-foreground">
+                        No inbound connection events recorded yet.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Security Handshakes */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                    <Fingerprint className="h-4 w-4 text-primary" />
+                    Security Handshakes (Noise/TLS)
+                  </CardTitle>
+                  <SuccessRateBadge
+                    success={metrics?.libp2p.security.handshakes.success ?? 0}
+                    failure={metrics?.libp2p.security.handshakes.failure ?? 0}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-center">
+                    <span className="text-[10px] font-medium text-muted-foreground">Successful</span>
+                    <p className="mt-0.5 text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                      {metrics?.libp2p.security.handshakes.success ?? 0}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-2.5 text-center">
+                    <span className="text-[10px] font-medium text-muted-foreground">Failed</span>
+                    <p className="mt-0.5 text-lg font-bold text-rose-600 dark:text-rose-400">
+                      {metrics?.libp2p.security.handshakes.failure ?? 0}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
+                    <span className="text-[10px] font-medium text-muted-foreground">Avg Duration</span>
+                    <p className="mt-0.5 text-lg font-bold text-primary">
+                      {metrics ? `${metrics.libp2p.security.avgDurationMs.toFixed(1)}ms` : "—"}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    By protocol & direction
+                  </span>
+                  <div className="mt-2 space-y-1.5">
+                    {metrics &&
+                      Object.entries(metrics.libp2p.security.byProtocol).map(([proto, d]) => (
+                        <div
+                          key={proto}
+                          className="flex items-center justify-between rounded-md border border-border/50 bg-background/50 px-2.5 py-1.5 text-xs"
+                        >
+                          <span className="font-mono text-muted-foreground">{proto}</span>
+                          <span className="flex items-center gap-2">
+                            <span className="font-mono text-emerald-500">{d.success} ok</span>
+                            <span className="font-mono text-rose-500">{d.failure} fail</span>
+                          </span>
+                        </div>
+                      ))}
+                    {(!metrics || Object.keys(metrics.libp2p.security.byProtocol).length === 0) && (
+                      <p className="text-xs text-muted-foreground">
+                        No handshake events recorded yet.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Multiplexer */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <Layers className="h-4 w-4 text-primary" />
+                  Stream Multiplexing (Muxers)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Muxed connections by protocol
+                  </span>
+                  <div className="mt-2 space-y-1.5">
+                    {metrics &&
+                      Object.entries(metrics.libp2p.muxer.conns).map(([muxer, d]) => (
+                        <div
+                          key={muxer}
+                          className="flex items-center justify-between rounded-md border border-border/50 bg-background/50 px-2.5 py-1.5 text-xs"
+                        >
+                          <span className="font-mono text-muted-foreground uppercase">{muxer}</span>
+                          <span className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className="font-mono text-[10px] px-1.5 py-0 border-sky-500/30 text-sky-500 bg-sky-500/5"
+                            >
+                              {d.outbound} out
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="font-mono text-[10px] px-1.5 py-0 border-emerald-500/30 text-emerald-500 bg-emerald-500/5"
+                            >
+                              {d.inbound} in
+                            </Badge>
+                          </span>
+                        </div>
+                      ))}
+                    {(!metrics || Object.keys(metrics.libp2p.muxer.conns).length === 0) && (
+                      <p className="text-xs text-muted-foreground">No muxed connections yet.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-medium text-sky-500">Streams Opened</span>
+                      <ArrowUpRight className="h-3.5 w-3.5 text-sky-500" />
+                    </div>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-xl font-bold text-foreground">
+                        {metrics?.libp2p.muxer.streamsOpen.outbound ?? 0}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">outbound</span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Inbound:{" "}
+                      <span className="font-medium text-foreground">
+                        {metrics?.libp2p.muxer.streamsOpen.inbound ?? 0}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-medium text-emerald-500">Streams Closed</span>
+                      <ArrowDownLeft className="h-3.5 w-3.5 text-emerald-500" />
+                    </div>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-xl font-bold text-foreground">
+                        {metrics?.libp2p.muxer.streamsClosed.outbound ?? 0}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">outbound</span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Inbound:{" "}
+                      <span className="font-medium text-foreground">
+                        {metrics?.libp2p.muxer.streamsClosed.inbound ?? 0}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-border/50 bg-background/50 px-2.5 py-1.5 text-xs">
+                  <span className="text-muted-foreground">Muxer upgrade failures</span>
+                  <span className="flex items-center gap-2 font-mono">
+                    <span className="text-sky-500">
+                      {(metrics?.libp2p.muxer.upgradeFailures.outbound ?? 0) + (metrics?.libp2p.muxer.upgradeFailures.inbound ?? 0)}
+                    </span>
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Identity */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <Globe className="h-4 w-4 text-primary" />
+                  Identity Exchange (Identify / Push)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-border bg-muted/20 p-3">
+                    <span className="text-xs text-muted-foreground">Identify Rounds</span>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-xl font-bold text-foreground">
+                        {(metrics?.libp2p.identity.identify.success ?? 0) +
+                          (metrics?.libp2p.identity.identify.failure ?? 0)}
+                      </span>
+                      <SuccessRateBadge
+                        success={metrics?.libp2p.identity.identify.success ?? 0}
+                        failure={metrics?.libp2p.identity.identify.failure ?? 0}
+                      />
+                    </div>
+                    <p className="mt-2 text-[10px] text-muted-foreground">
+                      Failed:{" "}
+                      <span className="font-medium text-rose-500">
+                        {metrics?.libp2p.identity.identify.failure ?? 0}
+                      </span>{" "}
+                      · Node metadata exchanged on connect
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border bg-muted/20 p-3">
+                    <span className="text-xs text-muted-foreground">Identify Push Updates</span>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-xl font-bold text-foreground">
+                        {(metrics?.libp2p.identity.push.success ?? 0) +
+                          (metrics?.libp2p.identity.push.failure ?? 0)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-[10px] text-muted-foreground">
+                      Failed:{" "}
+                      <span className="font-medium text-rose-500">
+                        {metrics?.libp2p.identity.push.failure ?? 0}
+                      </span>{" "}
+                      · Address/record updates pushed to peers
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <StatTile
+                    label="Connections Opened"
+                    value={metrics ? Object.values(metrics.libp2p.connections.opened).reduce((a, b) => a + b, 0) : 0}
+                    tone="success"
+                  />
+                  <StatTile
+                    label="Connections Closed"
+                    value={metrics ? Object.values(metrics.libp2p.connections.closed).reduce((a, b) => a + b, 0) : 0}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* DHT & Content Routing */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <Route className="h-4 w-4 text-primary" />
+                  Kademlia DHT & Content Routing
+                </CardTitle>
+                <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
+                  Routing table:{" "}
+                  {metrics ? metrics.libp2p.kad.routingTablePeers.toLocaleString() : "—"} peers
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                <StatTile
+                  label="Lookups"
+                  value={(metrics?.libp2p.kad.lookups.success ?? 0) + (metrics?.libp2p.kad.lookups.failure ?? 0)}
+                  tone="accent"
+                  sub={`${metrics?.libp2p.kad.lookups.success ?? 0} ok · ${metrics?.libp2p.kad.lookups.failure ?? 0} failed`}
+                />
+                <StatTile
+                  label="Avg Lookup Duration"
+                  value={metrics ? `${metrics.libp2p.kad.lookupDurationMs.toFixed(0)}ms` : "—"}
+                  sub={`${(metrics?.libp2p.kad.peersFoundPerLookup ?? 0).toFixed(1)} peers found / lookup`}
+                />
+                <StatTile
+                  label="Put Value"
+                  value={(metrics?.libp2p.kad.putValue.success ?? 0) + (metrics?.libp2p.kad.putValue.failure ?? 0)}
+                  tone="success"
+                  sub={`${metrics?.libp2p.kad.putValue.failure ?? 0} failures`}
+                />
+                <StatTile
+                  label="Get Value"
+                  value={(metrics?.libp2p.kad.getValue.success ?? 0) + (metrics?.libp2p.kad.getValue.failure ?? 0)}
+                  tone="success"
+                  sub={`${metrics?.libp2p.kad.getValue.failure ?? 0} failures`}
+                />
+                <StatTile
+                  label="Provide"
+                  value={(metrics?.libp2p.kad.provide.success ?? 0) + (metrics?.libp2p.kad.provide.failure ?? 0)}
+                  sub={`${metrics?.libp2p.kad.providersAnnounced ?? 0} peers announced`}
+                />
+                <StatTile
+                  label="Find Provider Queries"
+                  value={(metrics?.libp2p.kad.findProviders.success ?? 0) + (metrics?.libp2p.kad.findProviders.failure ?? 0)}
+                  sub={`${(metrics?.libp2p.kad.providersFoundPerQuery ?? 0).toFixed(1)} providers found / query`}
+                />
+              </div>
+
+              <div>
+                <span className="text-xs font-medium text-muted-foreground">
+                  Inbound DHT requests served (by peers)
+                </span>
+                <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  {metrics &&
+                    (Object.keys(metrics.libp2p.kad.inbound).length > 0
+                      ? Object.entries(metrics.libp2p.kad.inbound).map(([op, count]) => (
+                          <StatTile
+                            key={op}
+                            label={op.replace(/^get_/, "Get ").replace(/^put_/, "Put ").replace(/^find_/, "Find ").replace(/^add_/, "Add ")}
+                            value={count}
+                          />
+                        ))
+                      : [
+                          ["find_node", 0],
+                          ["get_providers", 0],
+                          ["get_value", 0],
+                          ["put_value", 0],
+                          ["add_provider", 0],
+                        ].map(([op]) => <StatTile key={op as string} label={op as string} value={0} />))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                <StatTile label="Rate Limited" value={metrics?.libp2p.kad.rateLimited ?? 0} tone="failure" />
+                <StatTile label="Record Validations" value={metrics?.libp2p.kad.recordValidation ?? 0} />
+                <StatTile label="Table Refreshes" value={metrics?.libp2p.kad.refresh ?? 0} />
+                <StatTile label="Record Republish" value={metrics?.libp2p.kad.republish ?? 0} />
+                <StatTile label="Stream Resets" value={metrics?.libp2p.kad.streamResets ?? 0} tone="failure" />
+                <StatTile
+                  label="Peers Queried / Lookup"
+                  value={(metrics?.libp2p.kad.peersQueriedPerLookup ?? 0).toFixed(1)}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Swarm & Transport Observability */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -600,6 +1099,256 @@ export default function MetricsPage() {
                       <p className="text-xs text-muted-foreground">Protocol handshake negotiation in progress...</p>
                     )}
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Exchange, Discovery & Peer Services */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Bitswap Protocol (libp2p) */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <Zap className="h-4 w-4 text-primary" />
+                  Bitswap Protocol Telemetry
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <StatTile
+                    label="Wantlist Adds"
+                    value={metrics?.libp2p.bitswap.wantlistAdds ?? 0}
+                    tone="accent"
+                    sub={`${metrics?.libp2p.bitswap.wantlistCancels ?? 0} cancels`}
+                  />
+                  <StatTile label="Active Sessions" value={metrics?.libp2p.bitswap.sessions ?? 0} />
+                  <StatTile
+                    label="Blocks Sent"
+                    value={metrics?.libp2p.bitswap.blocksSent ?? 0}
+                    tone="success"
+                    sub={
+                      metrics && metrics.libp2p.bitswap.blockBytesSent > 0
+                        ? `avg ${formatBytes(metrics.libp2p.bitswap.blockBytesSent)}`
+                        : undefined
+                    }
+                  />
+                  <StatTile
+                    label="Blocks Received"
+                    value={metrics?.libp2p.bitswap.blocksReceived ?? 0}
+                    tone="success"
+                    sub={
+                      metrics && metrics.libp2p.bitswap.blockBytesReceived > 0
+                        ? `avg ${formatBytes(metrics.libp2p.bitswap.blockBytesReceived)}`
+                        : undefined
+                    }
+                  />
+                  <StatTile label="Messages Sent" value={metrics?.libp2p.bitswap.messagesSent ?? 0} />
+                  <StatTile
+                    label="Messages Received"
+                    value={metrics?.libp2p.bitswap.messagesReceived ?? 0}
+                    sub={
+                      metrics && metrics.libp2p.bitswap.messageBytesReceived > 0
+                        ? `avg ${formatBytes(metrics.libp2p.bitswap.messageBytesReceived)}`
+                        : undefined
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-border/50 bg-background/50 px-2.5 py-1.5 text-xs">
+                  <span className="text-muted-foreground">Provider queries</span>
+                  <span className="font-mono font-medium text-foreground">
+                    {metrics?.libp2p.bitswap.providerQueriesFound ?? 0} found /{" "}
+                    {metrics?.libp2p.bitswap.providerQueries ?? 0} total
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Discovery */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <Radar className="h-4 w-4 text-primary" />
+                  Peer Discovery
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <StatTile
+                    label="Peers Discovered"
+                    value={metrics?.libp2p.discovery.peersDiscovered ?? 0}
+                    tone="success"
+                  />
+                  <StatTile
+                    label="Peers Lost"
+                    value={metrics?.libp2p.discovery.peersLost ?? 0}
+                    tone="failure"
+                  />
+                  <StatTile
+                    label="Bootstrap Connects"
+                    value={metrics?.libp2p.discovery.bootstrapConnects ?? 0}
+                    sub={
+                      metrics && metrics.libp2p.discovery.bootstrapAvgMs > 0
+                        ? `avg ${metrics.libp2p.discovery.bootstrapAvgMs.toFixed(0)}ms`
+                        : undefined
+                    }
+                  />
+                  <StatTile
+                    label="Random Walk Cycles"
+                    value={metrics?.libp2p.discovery.randomWalks ?? 0}
+                    sub={
+                      metrics
+                        ? `${metrics.libp2p.discovery.peersPerWalk.toFixed(1)} peers / walk`
+                        : undefined
+                    }
+                  />
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-primary">
+                  <Radar className="h-4 w-4 shrink-0" />
+                  <span>
+                    Random-walk refreshes the routing table periodically, discovering fresh peers
+                    without central bootstrappers.
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Ping */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <Timer className="h-4 w-4 text-primary" />
+                  Ping & Latency
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-center">
+                    <span className="text-[10px] font-medium text-muted-foreground">Pings Sent</span>
+                    <p className="mt-0.5 text-lg font-bold text-foreground">
+                      {metrics?.libp2p.ping.count ?? 0}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-center">
+                    <span className="text-[10px] font-medium text-muted-foreground">Avg RTT</span>
+                    <p className="mt-0.5 text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                      {metrics ? `${metrics.libp2p.ping.avgMs.toFixed(0)}ms` : "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-2.5 text-center">
+                    <span className="text-[10px] font-medium text-muted-foreground">Failures</span>
+                    <p className="mt-0.5 text-lg font-bold text-rose-600 dark:text-rose-400">
+                      {metrics?.libp2p.ping.failures ?? 0}
+                    </p>
+                  </div>
+                </div>
+
+                {metrics && metrics.libp2p.ping.buckets.length > 0 && (
+                  <div>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      RTT distribution (histogram)
+                    </span>
+                    <div className="mt-2 space-y-1.5">
+                      {metrics.libp2p.ping.buckets
+                        .map((b, i, arr) => {
+                          const prev = i > 0 ? arr[i - 1].count : 0;
+                          return { le: b.le, count: Math.max(0, b.count - prev) };
+                        })
+                        .filter((b) => b.count > 0)
+                        .map((b) => (
+                          <MetricBar
+                            key={b.le}
+                            label={b.le < 1 ? `${Math.round(b.le * 1000)}µs` : `${b.le}ms`}
+                            value={b.count}
+                            total={metrics.libp2p.ping.count}
+                            color="bg-primary"
+                            sub="pings"
+                          />
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Relay & Request/Response */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <Route className="h-4 w-4 text-primary" />
+                  Circuit Relay & Request/Response
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <StatTile
+                    label="Relay Reservations"
+                    value={metrics?.libp2p.relay.reservations ?? 0}
+                  />
+                  <StatTile label="Relay Hops" value={metrics?.libp2p.relay.hops ?? 0} />
+                  <StatTile
+                    label="Data Forwarded"
+                    value={metrics ? formatBytes(metrics.libp2p.relay.forwardedBytes) : "0 B"}
+                    sub="via relay"
+                  />
+                  <StatTile
+                    label="Requests Served"
+                    value={metrics?.libp2p.requestResponse.requests ?? 0}
+                    sub={
+                      metrics && metrics.libp2p.requestResponse.avgLatencyMs > 0
+                        ? `avg ${metrics.libp2p.requestResponse.avgLatencyMs.toFixed(1)}ms`
+                        : undefined
+                    }
+                  />
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-600 dark:text-emerald-400">
+                  <ShieldCheck className="h-4 w-4 shrink-0" />
+                  <span>
+                    Request/response protocol powers latency-measured exchanges; relay support lets
+                    the node serve traffic for peers without public addresses.
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Gossipsub */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <Send className="h-4 w-4 text-primary" />
+                  Gossipsub PubSub
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <StatTile
+                    label="Messages Published"
+                    value={metrics?.libp2p.gossipsub.published ?? 0}
+                    tone="success"
+                    sub={
+                      metrics && metrics.libp2p.gossipsub.outBytes > 0
+                        ? `avg ${formatBytes(metrics.libp2p.gossipsub.outBytes)}`
+                        : undefined
+                    }
+                  />
+                  <StatTile
+                    label="Messages Received"
+                    value={metrics?.libp2p.gossipsub.received ?? 0}
+                    sub={
+                      metrics && metrics.libp2p.gossipsub.messageBytes > 0
+                        ? `avg ${formatBytes(metrics.libp2p.gossipsub.messageBytes)}`
+                        : undefined
+                    }
+                  />
+                  <StatTile
+                    label="Subscription Changes"
+                    value={metrics?.libp2p.gossipsub.subscriptionChanges ?? 0}
+                  />
+                  <StatTile
+                    label="Control Messages"
+                    value={metrics?.libp2p.gossipsub.control ?? 0}
+                    sub={`${metrics?.libp2p.gossipsub.subopts ?? 0} sub-options`}
+                  />
                 </div>
               </CardContent>
             </Card>
