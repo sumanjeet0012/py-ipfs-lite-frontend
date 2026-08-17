@@ -8,6 +8,7 @@ import DagPage from "@/pages/DagPage";
 import PinsPage from "@/pages/PinsPage";
 import SwarmPage from "@/pages/SwarmPage";
 import MetricsPage from "@/pages/MetricsPage";
+import GrafanaPage from "@/pages/GrafanaPage";
 import RepoPage from "@/pages/RepoPage";
 import IpnsPage from "@/pages/IpnsPage";
 import DebugPage from "@/pages/DebugPage";
@@ -58,6 +59,7 @@ export default function App() {
               <Route path="/pins" element={<PinsPage />} />
               <Route path="/swarm" element={<SwarmPage />} />
               <Route path="/metrics" element={<MetricsPage />} />
+              <Route path="/grafana" element={<GrafanaPage />} />
               <Route path="/repo" element={<RepoPage />} />
               <Route path="/ipns" element={<IpnsPage />} />
               <Route path="/debug" element={<DebugPage />} />

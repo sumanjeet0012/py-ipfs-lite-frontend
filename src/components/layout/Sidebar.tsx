@@ -11,6 +11,7 @@ import {
   HardDrive,
   Globe,
   Bug,
+  Gauge,
 } from "lucide-react";
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
   { to: "/dag", label: "DAG", icon: GitBranch },
   { to: "/pins", label: "Pins", icon: Pin },
   { to: "/swarm", label: "Swarm", icon: Wifi },
+  { to: "/grafana", label: "Grafana", icon: Gauge },
   { to: "/metrics", label: "Metrics", icon: Activity },
   { to: "/repo", label: "Repo", icon: HardDrive },
   { to: "/ipns", label: "IPNS", icon: Globe },
