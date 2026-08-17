@@ -224,6 +224,8 @@ export function parsePrometheusText(text: string): ParsedPrometheusMetrics {  co
     const value = parseFloat(valueStr);
     if (!Number.isFinite(value)) continue;
 
+    if (metricName.endsWith("_created")) continue;
+
     // Find base family name (e.g. for histogram _bucket, _sum, _count)
     let baseName = metricName;
     if (
